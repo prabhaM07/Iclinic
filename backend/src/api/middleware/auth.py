@@ -1,0 +1,47 @@
+from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi import HTTPException, Request
+from fastapi.responses import JSONResponse
+from src.config.jwt_handler import verify_access_token
+
+class AuthorizationMiddleware(BaseHTTPMiddleware):
+
+    async def dispatch(self, request : Request, call_next):
+        
+        public_paths = [
+            "/", 
+            "/auth/login",
+            "/auth/register",
+            "/auth/refresh",
+            "/twilio-webhook",
+            "/voice-response",
+            "/users/get_roles",
+            "/favicon.ico"
+        ]
+
+        if request.url.path in public_paths or request.method == 'OPTIONS':
+            return await call_next(request)
+        
+        try :
+
+            credential = request.headers.get('Authorization')
+            print(credential)
+
+            if credential is None:
+                raise HTTPException(detail="Bearer authorization required", status_code=400)
+
+            scheme, _, token = credential.partition(" ")
+
+            if scheme.lower()  != 'bearer':
+                raise HTTPException(status_code=403, detail = "Invalid or expired token.")
+            
+            access_payload = await verify_access_token(token)
+            print(access_payload)
+
+            if access_payload is None:
+                raise HTTPException(status_code=403, detail="Invalid or expired token.")
+            
+            return await call_next(request) 
+        
+        except Exception as e:
+            return JSONResponse(status_code=401 , content={"detail-456": str(e)})
+
