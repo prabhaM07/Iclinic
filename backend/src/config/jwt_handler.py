@@ -16,7 +16,7 @@ async def create_access_token(payload : dict) -> dict:
 async def create_refresh_token(payload : dict) -> dict:
 
     to_encode = payload.copy()
-    expire = datetime.now(timezone.utc) +  timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(timezone.utc) +  timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     jti = str(uuid.uuid4())
     to_encode.update({"exp": expire,"jti" : jti,"type": "refresh"})
     encoded_jwt = jwt.encode(to_encode, settings.REFRESH_SECRET_KEY , algorithm= settings.ALGORITHM)

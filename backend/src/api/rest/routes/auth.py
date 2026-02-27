@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
-router = APIRouter(prefix = "/auth")
+router = APIRouter(prefix = "/auth",tags=["Authentication"])
 
 @router.post("/register")
 async def register_user(user_data : UserCreate, db : AsyncSession = Depends(get_db)):

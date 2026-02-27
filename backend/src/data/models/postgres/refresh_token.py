@@ -17,11 +17,13 @@ class RefreshToken(Base):
         nullable=False,
         default=uuid.uuid4()
     )
+
     expire_at = Column(
         DateTime(timezone=True),
         nullable=False,
         default=refresh_expiry
     ) 
+    
     is_revoked = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), default=func.now())
 

@@ -9,13 +9,15 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
         
         public_paths = [
             "/", 
-            "/auth/login",
-            "/auth/register",
-            "/auth/refresh",
-            "/twilio-webhook",
-            "/voice-response",
-            "/users/get_roles",
-            "/favicon.ico"
+            "/api/v1/auth/login",
+            "/api/v1/auth/register",
+            "/api/v1/auth/refresh",
+            "/api/v1/voice/twilio-webhook",
+            "/api/v1/voice/voice-response",
+            "/api/v1/users/get_roles",
+            "/favicon.ico",
+            "/docs",
+            "/openapi.json"
         ]
 
         if request.url.path in public_paths or request.method == 'OPTIONS':

@@ -3,7 +3,7 @@ from fastapi.responses import Response
 from twilio.twiml.voice_response import VoiceResponse, Gather
 from src.control.voice_assistance.graph import build_call_graph, build_response_graph
 
-router = APIRouter()
+router = APIRouter(prefix = "/voice", tags=["Voice Assistance"])
 call_graph     = build_call_graph()
 response_graph = build_response_graph()
 
@@ -34,12 +34,17 @@ async def make_call(request: Request,response:Response,to_number: str = Query(..
         print("Exception:", str(e))
         raise
 
-@router.post("/twilio-webhook")
-async def twilio_webhook(request: Request,response:Response):
-    
-    print("[twilio-webhook] Call answered")
+# store greeted calls
+greeted_calls = set()
 
-    # Build TwiML response: greet then listen
+@router.post("/twilio-webhook")
+async def twilio_webhook(request: Request):
+    
+    form = await request.form()
+    call_sid = form.get("CallSid")
+
+    print("[twilio-webhook] Call answered:", call_sid)
+
     response = VoiceResponse()
     gather = Gather(
         input="speech",
@@ -48,14 +53,16 @@ async def twilio_webhook(request: Request,response:Response):
         speech_model="phone_call",
         language="en-IN"
     )
-    gather.say("Hello! How can I assist you today?", voice="alice")
-    response.append(gather)
 
-    # If user says nothing, redirect back and start again
+    # greet only first time
+    if call_sid not in greeted_calls:
+        gather.say("Hello! How can I assist you today?", voice="alice")
+        greeted_calls.add(call_sid)
+
+    response.append(gather)
     response.redirect("/twilio-webhook")
 
     return Response(content=str(response), media_type="application/xml")
-
 
 @router.post("/voice-response")
 async def voice_response(request: Request,response:Response):
@@ -91,3 +98,5 @@ async def voice_response(request: Request,response:Response):
     response.redirect("/twilio-webhook")
 
     return Response(content=str(response), media_type="application/xml")
+
+
