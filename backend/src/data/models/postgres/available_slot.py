@@ -14,12 +14,12 @@ class AvailableSlot(Base):
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
 
-    status = Column(Enum(SlotStatus), default=SlotStatus.AVAILABLE)
+    status = Column(Enum(SlotStatus), default=SlotStatus.AVAILABLE, server_default="AVAILABLE", nullable=False)
 
     created_by = Column(Integer, ForeignKey("users.id"))
     notes = Column(Text)
 
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=True, server_default="true", nullable=False)
 
     created_at = Column(DateTime(timezone=True), default=func.now())
     updated_at = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())

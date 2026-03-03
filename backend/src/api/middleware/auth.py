@@ -12,9 +12,9 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
             "/api/v1/auth/login",
             "/api/v1/auth/register",
             "/api/v1/auth/refresh",
-            "/api/v1/voice/twilio-webhook",
             "/api/v1/voice/voice-response",
             "/api/v1/users/get_roles",
+            "/api/v1/voice/call-status",
             "/favicon.ico",
             "/docs",
             "/openapi.json"
@@ -45,5 +45,5 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
             return await call_next(request) 
         
         except Exception as e:
-            return JSONResponse(status_code=401 , content={"detail-456": str(e)})
+            return JSONResponse(status_code=401 , content={"detail": str(e)})
 

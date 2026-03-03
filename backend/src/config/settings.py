@@ -22,6 +22,16 @@ class Settings(BaseSettings):
     MY_PHONE: str
     TWIML_BIN_URL: str
 
+    VOICE : str
+    LANGUAGE : str
+    SPEECH_TIMEOUT : str
+    ACTION_ON_EMPTY_RESULT : str
+    GATHER_TIMEOUT : int
+
+    SPEAKING_RATE : str
+
+    SESSION_TTL_SECONDS : int
+
     @property
     def groq_keys_list(self) -> List[str]:
         return [k.strip() for k in self.GROQ_API_KEYS.split(",")]

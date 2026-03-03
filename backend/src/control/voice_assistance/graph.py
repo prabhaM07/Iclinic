@@ -1,13 +1,25 @@
 from langgraph.graph import StateGraph, END
+from src.control.voice_assistance.routes import (
+    route_after_clarify,
+    route_after_confirmation,
+    route_after_stt,
+    route_after_doctor_selection,
+    route_after_slot_selection,
+)
 from .state import VoiceState
-from .nodes.call_init_node import call_init_node
-from .nodes.stt_node import stt_node
-from .nodes.think_node import think_node
-from .nodes.tts_node import tts_node
+from .nodes.call_init_node                import call_init_node
+from .nodes.stt_node                      import stt_node
+from .nodes.identity_confirmation_node    import confirmation_node   # ← renamed
+from .nodes.clarify_node                  import clarify_node
+from .nodes.mapping_node                  import mapping_node
+from .nodes.tts_node                      import tts_node
+from .nodes.doctor_selection_node         import doctor_selection_node
+from .nodes.slot_selection_node           import slot_selection_node
+from .nodes.book_appointment_node         import book_appointment_node
+from .nodes.booking_confirmation_node     import booking_confirmation_node  # ← new
 
 
 def build_call_graph():
-    
     workflow = StateGraph(VoiceState)
     workflow.add_node("call_init", call_init_node)
     workflow.set_entry_point("call_init")
@@ -16,18 +28,58 @@ def build_call_graph():
 
 
 def build_response_graph():
-    
+
     workflow = StateGraph(VoiceState)
 
-    workflow.add_node("stt",   stt_node)
-    workflow.add_node("think", think_node)
-    workflow.add_node("tts",   tts_node)
+    # ── nodes ──────────────────────────────────────────────────────────────────
+    workflow.add_node("stt",                  stt_node)
+    workflow.add_node("confirmation",         confirmation_node)
+    workflow.add_node("clarify",              clarify_node)
+    workflow.add_node("mapping",              mapping_node)
+    workflow.add_node("doctor_selection",     doctor_selection_node)
+    workflow.add_node("slot_selection",       slot_selection_node)
+    workflow.add_node("book_appointment",     book_appointment_node)
+    workflow.add_node("booking_confirmation", booking_confirmation_node)  # ← new
+    workflow.add_node("tts",                  tts_node)
 
+    # ── entry ──────────────────────────────────────────────────────────────────
     workflow.set_entry_point("stt")
-    workflow.add_edge("stt",   "think")
-    workflow.add_edge("think", "tts")
-    workflow.add_edge("tts",   END)
+
+    workflow.add_conditional_edges(
+        "stt",
+        route_after_stt,
+        {"confirmation": "confirmation", "clarify": "clarify"},
+    )
+
+    workflow.add_conditional_edges(
+        "confirmation",
+        route_after_confirmation,
+        {"tts": "tts", "clarify": "clarify"},
+    )
+
+    workflow.add_conditional_edges(
+        "clarify",
+        route_after_clarify,
+        {"tts": "tts", "mapping": "mapping"},
+    )
+
+    workflow.add_edge("mapping", "doctor_selection")
+
+    workflow.add_conditional_edges(
+        "doctor_selection",
+        route_after_doctor_selection,
+        {"tts": "tts", "slot_selection": "slot_selection"},
+    )
+
+    workflow.add_conditional_edges(
+        "slot_selection",
+        route_after_slot_selection,
+        {"book_appointment": "book_appointment", "tts": "tts"},
+    )
+
+    # ── book → confirmation email → tts ───────────────────────────────────────
+    workflow.add_edge("book_appointment",     "booking_confirmation")
+    workflow.add_edge("booking_confirmation", "tts")
+    workflow.add_edge("tts",                  END)
 
     return workflow.compile()
-
-

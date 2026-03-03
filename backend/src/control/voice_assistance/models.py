@@ -25,7 +25,7 @@ def get_llama1():
         model="llama-3.1-8b-instant",
         temperature=0.2,     
         max_tokens=150,
-        api_key = API_KEYS[0]
+        api_key = API_KEYS[1]
     )
 
 async def ainvoke_llm(messages):

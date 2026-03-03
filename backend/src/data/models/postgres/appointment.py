@@ -17,7 +17,7 @@ class Appointment(Base):
     scheduled_start_time = Column(Time, nullable=False)
     scheduled_end_time = Column(Time, nullable=False)
 
-    status = Column(Enum(AppointmentStatus), default=AppointmentStatus.SCHEDULED)
+    status = Column(Enum(AppointmentStatus), default=AppointmentStatus.SCHEDULED, server_default="SCHEDULED", nullable=False)
     reason_for_visit = Column(Text)
     notes = Column(Text)
 
@@ -27,7 +27,7 @@ class Appointment(Base):
     cancelled_at = Column(DateTime(timezone=True))
     cancellation_reason = Column(Text)
 
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=True, server_default="true", nullable=False)
 
     created_at = Column(DateTime(timezone=True), default=func.now())
     updated_at = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())

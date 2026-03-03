@@ -8,6 +8,11 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
+    appointment_type_id = Column(
+        Integer,
+        ForeignKey("appointment_types.id"),
+        nullable=True
+    )
 
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
@@ -16,7 +21,7 @@ class User(Base):
     email = Column(String(100), nullable=False, unique=True)
     password = Column(String(255), nullable=False)
 
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=True, server_default="true", nullable=False)
 
     created_at = Column(DateTime(timezone=True), default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -25,7 +30,7 @@ class User(Base):
     role = relationship("Role", backref="users")
     patient_profile = relationship("PatientProfile", back_populates="user", uselist=False)
     provider_profile = relationship("ProviderProfile", back_populates="user", uselist=False)
-
+    appointment_type = relationship("AppointmentType", back_populates="providers")
 
 
 class PatientProfile(Base):

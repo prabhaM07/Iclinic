@@ -12,7 +12,7 @@ class BookingChannel(enum.Enum):
     APP = "APP"
     CALL = "CALL"
     WALK_IN = "WALK_IN"
-
+    VOICE = "VOICE"
 
 class SlotStatus(enum.Enum):
     AVAILABLE = "AVAILABLE"

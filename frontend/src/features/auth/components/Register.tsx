@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { registerUser, getRoles } from "../services/authService";
+import { registerUser } from "../services/authService";
 
 const COUNTRY_CODES = [
   { label: "+91 India", value: "+91" },
@@ -21,10 +21,6 @@ interface FormState {
   confirmPassword: string;
 }
 
-interface Role {
-  id: number;
-  name: string;
-}
 
 const initialForm: FormState = {
   first_name: "",
@@ -49,23 +45,11 @@ function validatePassword(password: string): string | null {
 export default function Register() {
   const navigate = useNavigate();
 
-  // ✅ ALL hooks inside the component body
+  // ALL hooks inside the component body
   const [form, setForm] = useState<FormState>(initialForm);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [roles, setRoles] = useState<Role[]>([]);
 
-  useEffect(() => {
-    const loadRoles = async () => {
-      try {
-        const data = await getRoles();
-        setRoles(data);
-      } catch (err) {
-        console.error("Failed to load roles");
-      }
-    };
-    loadRoles();
-  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -91,7 +75,7 @@ export default function Register() {
       await registerUser({
         first_name: form.first_name,
         last_name: form.last_name,
-        role_id: form.role_id,
+        role_id: 1, // Default to patient role; adjust as needed
         country_code: form.country_code,
         phone_no: form.phone_no,
         email: form.email,
@@ -153,23 +137,6 @@ export default function Register() {
                     value={form.last_name} onChange={handleChange} placeholder="Doe"
                     className={inputClass} />
                 </div>
-              </div>
-
-              {/* Role */}
-              <div>
-                <label htmlFor="role_id" className={labelClass}>Role</label>
-                <select
-                  name="role_id"
-                  value={form.role_id}
-                  onChange={(e) => setForm((prev) => ({ ...prev, role_id: Number(e.target.value) }))}
-                  required
-                  className={inputClass}
-                >
-                  <option value={0}>Select Role</option>
-                  {roles.map((role) => (
-                    <option key={role.id} value={role.id}>{role.name}</option>
-                  ))}
-                </select>
               </div>
 
               {/* Email */}
@@ -255,3 +222,4 @@ export default function Register() {
     </div>
   );
 }
+

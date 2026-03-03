@@ -166,7 +166,6 @@ async def bulk_get_instance(
     for key,value in kwargs.items():
         if hasattr(model, key):
             stmt = stmt.where(getattr(model,key) == value)
-
     result = await db.execute(stmt)
 
     return result.scalars().all()

@@ -53,7 +53,9 @@ async def login_user(request: Request,response:Response,user_data : UserLogin,db
 
         payload = {
             "id": user.id,
-            "email": user.email
+            "email": user.email,
+            "name" : user.first_name + " " + user.last_name,
+            "phone_number": user.phone_no
         }
         
         access_data = await create_access_token(payload=payload)
@@ -79,7 +81,6 @@ async def logout(request: Request,response:Response,db: AsyncSession =  Depends(
         # print(refresh_token)
         if not refresh_token:
             raise HTTPException(status_code=400 , detail = "Refres Token missing")
-        
         
         payload = await verify_refresh_token(refresh_token)
 
@@ -122,8 +123,10 @@ async def refresh_token(request: Request, response: Response, db: AsyncSession =
 
     user_id = payload.get("id")
     email = payload.get("email")
+    name = payload.get("name")
+    phone_number = payload.get("phone_number")      
     
-    token_data = {"email": email, "id": user_id}
+    token_data = {"email": email, "id": user_id, "name": name, "phone_number": phone_number}
     access_data = await create_access_token(token_data)
 
     response.set_cookie(key="access_token", value=access_data[0], httponly=True, samesite="lax", secure=False, max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
