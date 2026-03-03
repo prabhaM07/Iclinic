@@ -21,6 +21,7 @@ TOPICS = [
 async def get_covered_topics(conversation: str, topics: list[str]) -> list[str]:
 
     topics_numbered = "\n".join(f"{i+1}. {t}" for i, t in enumerate(topics))
+    
     prompt = f"""Conversation:
         {conversation}
 
@@ -40,7 +41,6 @@ async def get_covered_topics(conversation: str, topics: list[str]) -> list[str]:
         ])
 
         raw = response.content.strip()
-        print("[ ai_response ]:", raw)
 
         raw_upper = raw.upper()
         if raw_upper == "NONE" or not raw_upper:
@@ -57,9 +57,8 @@ async def get_covered_topics(conversation: str, topics: list[str]) -> list[str]:
         return covered
 
     except Exception as exc:
-        print("\n [ERROR] get_covered_topics crashed")
+
         print("Message:", str(exc))
-        
         return []
 
 
@@ -90,7 +89,7 @@ async def clarify_node(state: dict) -> dict:
                     **state,
                     "ai_text": (
                         "This sounds like a medical emergency. "
-                        "Please call emergency services immediately and do not wait for an appointment."
+                        "Please stay on the line while I connect you to our emergency support team."
                     ),
                     "emergency": True,
                     "clarify_done": True,
@@ -125,14 +124,14 @@ async def clarify_node(state: dict) -> dict:
 
         conversation = build_conversation_string(history)
 
-        next_response = await generate_next_response(
+        response = await generate_next_response(
             conversation,
             uncovered,
             model=ainvoke_llm,
             system_prompt=CLARIFY_SYSTEM_PROMPT
         )
 
-        print(" [ ai_response ]:", next_response)
+        print(" [ ai_response ]:", response)
 
         if is_first_turn:
             name_part = f", {user_name}" if user_name else ""
@@ -140,21 +139,20 @@ async def clarify_node(state: dict) -> dict:
                 f"Thank you for confirming your name and phone number{name_part}. "
                 f"We'll get you sorted right away. "
             )
-            next_response = greeting + next_response
-            print("[DEBUG] Added first turn greeting")
+            response = greeting + response
 
-        history.append({"role": "agent", "text": next_response})
+        history.append({"role": "agent", "text": response})
 
         return {
             **state,
-            "ai_text": next_response,
+            "ai_text": response,
             "history": history,
             "covered_topics": covered,
             "clarify_done": False,
         }
 
     except Exception as exc:
-        print("\n CLARIFY NODE CRASHED")
+
         print("Message:", str(exc))
 
         return {

@@ -32,6 +32,17 @@ class Settings(BaseSettings):
 
     SESSION_TTL_SECONDS : int
 
+    MAIL_USERNAME: str
+    MAIL_PASSWORD: str
+    MAIL_FROM: str
+    MAIL_PORT: int
+    MAIL_SERVER: str
+    MAIL_STARTTLS: bool
+    MAIL_SSL_TLS: bool
+    USE_CREDENTIALS: bool
+
+    EMERGENCY_FORWARD_NUMBER : str
+
     @property
     def groq_keys_list(self) -> List[str]:
         return [k.strip() for k in self.GROQ_API_KEYS.split(",")]

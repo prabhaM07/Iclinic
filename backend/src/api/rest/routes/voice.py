@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import Response
 from twilio.twiml.voice_response import VoiceResponse
+from src.config.settings import settings
 from src.control.voice_assistance.utils import fresh_state, make_gather, say
 from src.control.voice_assistance.graph import build_call_graph, build_response_graph
 from src.api.rest.dependencies import get_current_user
@@ -70,10 +71,9 @@ async def voice_response(request: Request):
     
     call_complete = (
         (confirmation_done and not confirmed_user)  # identity denied
-        or emergency                                # medical emergency
         or id is not None                           # actual booking done
     )
-
+    
     if call_complete:
         delete_session(call_sid)
     else:
@@ -81,6 +81,10 @@ async def voice_response(request: Request):
 
     # Build TwiML
     twiml = VoiceResponse()
+
+    if emergency:
+        say(twiml, ai_text)
+        twiml.dial(settings.EMERGENCY_FORWARD_NUMBER) 
 
     if call_complete:
         say(twiml, ai_text)
@@ -90,7 +94,6 @@ async def voice_response(request: Request):
         say(gather, ai_text)
         twiml.append(gather)
         
-        # Fallback if caller says nothing — give one retry then hang up
         retry = make_gather()
         say(retry, "Sorry, I did not catch that. Please go ahead and speak.")
         twiml.append(retry)

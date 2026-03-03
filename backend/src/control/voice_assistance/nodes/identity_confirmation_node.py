@@ -1,25 +1,25 @@
 import json
-from typing import Dict, Any, List
+from typing import Dict, Any
 from src.control.voice_assistance.prompts.confirmation_node_prompt import CONVERSATION_PROMPT, VERIFIER_PROMPT
 from src.control.voice_assistance.models import ainvoke_llm
 from src.control.voice_assistance.utils import clear_markdown
 
 
-async def confirmation_node(state: Dict[str, Any]) -> Dict[str, Any]:
+async def identity_confirmation_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
-    print("i came here [confirmation_node] -----------------------------")
+    print("[identity_confirmation_node] -----------------------------")
 
-    patient_name: str = (state.get("user_name") or "").strip() or "Prabha"
-    phone_number: str = (state.get("user_phone") or "").strip() or "9524650818"
+    patient_name: str = (state.get("user_name") or "").strip()
+    phone_number: str = (state.get("user_phone") or "").strip()
     user_text: str = (state.get("user_text") or "").strip()
 
     if not patient_name:
         return state
 
-    # Always read from state (persisted across requests)
     conversation: list = list(state.get("conversation") or [])
 
     if user_text:
+
         print("[user_response] :", user_text)
         
         conversation.append({"role": "user", "content": user_text})
@@ -39,8 +39,6 @@ async def confirmation_node(state: Dict[str, Any]) -> Dict[str, Any]:
         conv_response = await ainvoke_llm(conv_messages)
         sentence: str = conv_response.content.strip()
 
-        print("[ai_response] :", sentence)
-
     except Exception:
         return state
 
@@ -50,7 +48,7 @@ async def confirmation_node(state: Dict[str, Any]) -> Dict[str, Any]:
     corrected_phone = None
 
     if user_text:
-        # Give verifier the full conversation so it knows what was asked
+
         verify_messages = [
             {"role": "system", "content": VERIFIER_PROMPT},
             {"role": "user", "content": f"Conversation so far:\n{conv_messages}\n\nLatest user reply: {user_text}"}
@@ -76,7 +74,7 @@ async def confirmation_node(state: Dict[str, Any]) -> Dict[str, Any]:
         state["user_phone"] = corrected_phone
 
     conversation.append({"role": "assistant", "content": sentence})
-    print("RETURNING AI_TEXT:", sentence)
+
     return {
         **state,
         "conversation": conversation,
@@ -84,3 +82,4 @@ async def confirmation_node(state: Dict[str, Any]) -> Dict[str, Any]:
         "confirmation_done": confirmed or end_call,
         "ai_text": sentence,
     }
+

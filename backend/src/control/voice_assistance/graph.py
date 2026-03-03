@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, END
 from src.control.voice_assistance.routes import (
     route_after_clarify,
-    route_after_confirmation,
+    route_after_identity_confirmation,
     route_after_stt,
     route_after_doctor_selection,
     route_after_slot_selection,
@@ -9,14 +9,14 @@ from src.control.voice_assistance.routes import (
 from .state import VoiceState
 from .nodes.call_init_node                import call_init_node
 from .nodes.stt_node                      import stt_node
-from .nodes.identity_confirmation_node    import confirmation_node   # ← renamed
+from .nodes.identity_confirmation_node    import identity_confirmation_node   
 from .nodes.clarify_node                  import clarify_node
 from .nodes.mapping_node                  import mapping_node
 from .nodes.tts_node                      import tts_node
 from .nodes.doctor_selection_node         import doctor_selection_node
 from .nodes.slot_selection_node           import slot_selection_node
 from .nodes.book_appointment_node         import book_appointment_node
-from .nodes.booking_confirmation_node     import booking_confirmation_node  # ← new
+from .nodes.booking_confirmation_node     import booking_confirmation_node  
 
 
 def build_call_graph():
@@ -31,9 +31,9 @@ def build_response_graph():
 
     workflow = StateGraph(VoiceState)
 
-    # ── nodes ──────────────────────────────────────────────────────────────────
+    # nodes 
     workflow.add_node("stt",                  stt_node)
-    workflow.add_node("confirmation",         confirmation_node)
+    workflow.add_node("identity_confirmation",         identity_confirmation_node)
     workflow.add_node("clarify",              clarify_node)
     workflow.add_node("mapping",              mapping_node)
     workflow.add_node("doctor_selection",     doctor_selection_node)
@@ -42,18 +42,18 @@ def build_response_graph():
     workflow.add_node("booking_confirmation", booking_confirmation_node)  # ← new
     workflow.add_node("tts",                  tts_node)
 
-    # ── entry ──────────────────────────────────────────────────────────────────
+    # entry
     workflow.set_entry_point("stt")
 
     workflow.add_conditional_edges(
         "stt",
         route_after_stt,
-        {"confirmation": "confirmation", "clarify": "clarify"},
+        {"identity_confirmation": "identity_confirmation", "clarify": "clarify"},
     )
 
     workflow.add_conditional_edges(
-        "confirmation",
-        route_after_confirmation,
+        "identity_confirmation",
+        route_after_identity_confirmation,
         {"tts": "tts", "clarify": "clarify"},
     )
 
@@ -77,7 +77,6 @@ def build_response_graph():
         {"book_appointment": "book_appointment", "tts": "tts"},
     )
 
-    # ── book → confirmation email → tts ───────────────────────────────────────
     workflow.add_edge("book_appointment",     "booking_confirmation")
     workflow.add_edge("booking_confirmation", "tts")
     workflow.add_edge("tts",                  END)

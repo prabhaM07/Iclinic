@@ -1,10 +1,4 @@
 import json
-from typing import Dict, Any, List
-from src.control.voice_assistance.prompts.confirmation_node_prompt import CONVERSATION_PROMPT, VERIFIER_PROMPT
-from src.control.voice_assistance.models import ainvoke_llm
-from src.control.voice_assistance.utils import clear_markdown
-
-import json
 from src.data.clients.postgres_client import AsyncSessionLocal
 from src.core.services.appointment_type import get_appointment_types
 from src.control.voice_assistance.utils import clear_markdown
@@ -14,7 +8,7 @@ from src.control.voice_assistance.models import get_llama1
 async def appointment_types_map():
     async with AsyncSessionLocal() as db:
         appointment_types = await get_appointment_types(db)
-        print("Fetched appointment types from DB:", appointment_types)
+
         return {
             at.id: [at.name, at.description]
             for at in appointment_types
@@ -58,12 +52,14 @@ async def mapping_node(state: dict) -> dict:
         try:
             parsed = json.loads(clean_response)
             return int(parsed.get("appointment_type_id"))
+        
         except (json.JSONDecodeError, TypeError, ValueError):
-            # Hard fallback — return first id whose name loosely matches general_checkup
+
             for type_id, (name, _) in appointment_types.items():
                 if "general" in name.lower():
                     return type_id
-            return next(iter(appointment_types))  # absolute last resort
+            return next(iter(appointment_types))  
+        
     if state.get("emergency"):
         return {
             **state,
@@ -117,15 +113,12 @@ async def mapping_node(state: dict) -> dict:
     try:
         parsed = json.loads(clean_response)
         intent = str(parsed.get("intent", "general_checkup")).strip().lower()
-        reasoning = str(parsed.get("reasoning", "")).strip()
 
     except (json.JSONDecodeError, AttributeError, KeyError):
         intent = "general_checkup"
-        reasoning = "Parse error — defaulted to general check-up."
     
     if intent not in [_normalise(name) for _, (name, _) in APPOINTMENT_TYPES.items()]:
         intent = "general_checkup"
-        reasoning = "Defaulted to general check-up as classification was unclear."
 
     appointment_type_id = await _resolve_appointment_type_id(intent, APPOINTMENT_TYPES)
 
@@ -143,3 +136,4 @@ async def mapping_node(state: dict) -> dict:
             f"You'll receive a confirmation shortly."
         ),
     }
+
