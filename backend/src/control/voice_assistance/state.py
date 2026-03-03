@@ -29,7 +29,7 @@ class VoiceState(TypedDict):
 
     # ── Clarify / intake stage ─────────────────────────────────────────────────
     clarify_step:     Optional[int]
-    history:          Optional[List[Dict[str, str]]]   # full conversation history for LLM context
+    conversation_history: Optional[List[Dict[str, str]]] 
     covered_topics:   Optional[List[str]]
     clarify_done:     Optional[bool]
     symptoms_text:    Optional[str]
@@ -58,3 +58,13 @@ class VoiceState(TypedDict):
     reason_for_visit:  Optional[str]
     notes:             Optional[str]
     instructions:      Optional[str]
+
+    service_type: Optional[str]  # "Booking" or "Cancellation"
+
+
+    # ── Cancellation Flow ────────────────────────────────────────────────
+    cancellation_stage: Optional[str]   # None | ask_confirm | done
+    appointment_to_cancel: Optional[Dict]
+    cancellation_complete: Optional[bool]
+
+    appointments_list: Optional[List[Dict]]

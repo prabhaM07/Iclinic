@@ -1,10 +1,5 @@
-
-# Speech-to-text is handled by Twilio's <Gather> element.
-# This node normalises and sanitises the transcribed text before
-
-
 async def stt_node(state: dict) -> dict:
-    print("i came here [stt_node] -----------------------------")
+    print("[stt_node] -----------------------------")
 
     user_text: str | None = state.get("user_text")
 
@@ -14,4 +9,19 @@ async def stt_node(state: dict) -> dict:
     # trim leading/trailing spaces
     cleaned = " ".join(user_text.split()).strip()
 
-    return {**state, "user_text": cleaned}
+    # get existing history or initialize
+    history = state.get("conversation_history") or []
+
+    # append user message
+    history.append({
+        "role": "user",
+        "content": cleaned
+    })
+
+    print("STT received",user_text)
+
+    return {
+        **state,
+        "user_text": cleaned,
+        "conversation_history": history
+    }

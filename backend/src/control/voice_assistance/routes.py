@@ -1,9 +1,17 @@
 def route_after_stt(state: dict) -> str:
-    
-    if state.get("confirmation_done"):
+
+    if not state.get("service_type"):
+        return "service_intent"
+
+    if state.get("service_type") == "booking":
+        if not state.get("confirmation_done"):
+            return "identity_confirmation"
         return "clarify"
-    
-    return "identity_confirmation"
+
+    if state.get("service_type") == "cancellation":
+        return "cancel_appointment"
+
+    return "service_intent"
 
 
 def route_after_identity_confirmation(state: dict) -> str:
@@ -15,6 +23,19 @@ def route_after_identity_confirmation(state: dict) -> str:
     if state.get("speak_final"):
         return "tts"
     return "clarify"
+
+
+def route_after_service_intent(state: dict) -> str:
+
+    service = state.get("service_type")
+
+    if service == "booking":
+        return "identity_confirmation"
+
+    if service == "cancellation":
+        return "cancel_appointment"
+
+    return "tts"
 
 
 def route_after_clarify(state: dict) -> str:

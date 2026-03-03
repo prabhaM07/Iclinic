@@ -64,19 +64,20 @@ async def get_covered_topics(conversation: str, topics: list[str]) -> list[str]:
 
 async def clarify_node(state: dict) -> dict:
     
+    print("[clarify_node] -----------------------------")
     try:
-        history: list[dict] = list(state.get("history") or [])
+        conversation_history: list[dict] = list(state.get("conversation_history") or [])
         user_text: str | None = state.get("user_text")
         covered: list[str] = list(state.get("covered_topics") or [])
         user_name: str | None = state.get("user_name")
 
         print("user_response:", user_text)
 
-        is_first_turn = len(history) == 0
+        is_first_turn = len(conversation_history) == 0
 
         if user_text:
 
-            history.append({"role": "patient", "text": user_text.strip()})
+            conversation_history.append({"role": "patient", "text": user_text.strip()})
 
             emergency_flag = await is_emergency(
                 user_text,
@@ -93,14 +94,14 @@ async def clarify_node(state: dict) -> dict:
                     ),
                     "emergency": True,
                     "clarify_done": True,
-                    "history": history,
+                    "conversation_history": conversation_history,
                     "covered_topics": covered,
                 }
 
             unchecked = [t for t in TOPICS if t not in covered]
 
             if unchecked:
-                conversation = build_conversation_string(history)
+                conversation = build_conversation_string(conversation_history)
 
                 newly_covered = await get_covered_topics(conversation, unchecked)
 
@@ -111,18 +112,18 @@ async def clarify_node(state: dict) -> dict:
 
         if not uncovered:
 
-            symptoms_text = build_symptoms_text(history, TOPICS)
+            symptoms_text = build_symptoms_text(conversation_history, TOPICS)
 
             return {
                 **state,
                 "symptoms_text": symptoms_text,
-                "history": history,
+                "conversation_history": conversation_history,
                 "covered_topics": covered,
                 "clarify_done": True,
                 "ai_text": None,
             }
 
-        conversation = build_conversation_string(history)
+        conversation = build_conversation_string(conversation_history)
 
         response = await generate_next_response(
             conversation,
@@ -141,12 +142,12 @@ async def clarify_node(state: dict) -> dict:
             )
             response = greeting + response
 
-        history.append({"role": "agent", "text": response})
+        conversation_history.append({"role": "agent", "text": response})
 
         return {
             **state,
             "ai_text": response,
-            "history": history,
+            "conversation_history": conversation_history,
             "covered_topics": covered,
             "clarify_done": False,
         }
@@ -161,5 +162,3 @@ async def clarify_node(state: dict) -> dict:
             "clarify_done": True,
             "error": str(exc),
         }
-
-

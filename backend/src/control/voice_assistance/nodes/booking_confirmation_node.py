@@ -1,5 +1,4 @@
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
-from src.data.clients.postgres_client import AsyncSessionLocal
 
 
 conf = ConnectionConfig(

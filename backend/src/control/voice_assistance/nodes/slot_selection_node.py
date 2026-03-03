@@ -1,5 +1,3 @@
-# nodes/slot_selection_node.py
-
 import json
 from datetime import time, date
 from src.data.clients.postgres_client import AsyncSessionLocal
@@ -110,7 +108,6 @@ async def llm_extract(system: str, human: str) -> dict:
         return {}
 
 
-# ── Main node ─────────────────────────────────────────────────────────────────
 async def slot_selection_node(state: dict) -> dict:
 
     print("i came here [slot_selection_node] -----------------------------")

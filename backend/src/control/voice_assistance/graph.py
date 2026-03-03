@@ -2,6 +2,7 @@ from langgraph.graph import StateGraph, END
 from src.control.voice_assistance.routes import (
     route_after_clarify,
     route_after_identity_confirmation,
+    route_after_service_intent,
     route_after_stt,
     route_after_doctor_selection,
     route_after_slot_selection,
@@ -17,7 +18,8 @@ from .nodes.doctor_selection_node         import doctor_selection_node
 from .nodes.slot_selection_node           import slot_selection_node
 from .nodes.book_appointment_node         import book_appointment_node
 from .nodes.booking_confirmation_node     import booking_confirmation_node  
-
+from .nodes.service_intent_node           import service_intent_node
+from .nodes.cancel_appointment_node       import cancel_appointment_node
 
 def build_call_graph():
     workflow = StateGraph(VoiceState)
@@ -33,10 +35,12 @@ def build_response_graph():
 
     # nodes 
     workflow.add_node("stt",                  stt_node)
-    workflow.add_node("identity_confirmation",         identity_confirmation_node)
+    workflow.add_node("identity_confirmation",identity_confirmation_node)
     workflow.add_node("clarify",              clarify_node)
     workflow.add_node("mapping",              mapping_node)
     workflow.add_node("doctor_selection",     doctor_selection_node)
+    workflow.add_node("service_intent",       service_intent_node)
+    workflow.add_node("cancel_appointment",   cancel_appointment_node)
     workflow.add_node("slot_selection",       slot_selection_node)
     workflow.add_node("book_appointment",     book_appointment_node)
     workflow.add_node("booking_confirmation", booking_confirmation_node)  # ← new
@@ -48,9 +52,25 @@ def build_response_graph():
     workflow.add_conditional_edges(
         "stt",
         route_after_stt,
-        {"identity_confirmation": "identity_confirmation", "clarify": "clarify"},
+        {
+            "service_intent": "service_intent",
+            "identity_confirmation": "identity_confirmation",
+            "clarify": "clarify",
+            "cancel_appointment": "cancel_appointment",
+        }
     )
-
+        
+   
+    workflow.add_conditional_edges(
+    "service_intent",
+    route_after_service_intent,
+    {
+        "identity_confirmation": "identity_confirmation",
+        "cancel_appointment": "cancel_appointment",
+        "tts": "tts",  # fallback if unclear
+    },
+)
+    
     workflow.add_conditional_edges(
         "identity_confirmation",
         route_after_identity_confirmation,
@@ -79,6 +99,7 @@ def build_response_graph():
 
     workflow.add_edge("book_appointment",     "booking_confirmation")
     workflow.add_edge("booking_confirmation", "tts")
+    workflow.add_edge("cancel_appointment", "tts")
     workflow.add_edge("tts",                  END)
 
     return workflow.compile()

@@ -9,13 +9,10 @@ from src.data.repositories.generic_crud import get_instance_by_any
 from src.data.models.postgres.user import User
 
 
-async def _get_patient_id(email: str) -> str | None:
-    async with AsyncSessionLocal() as db:
-        user = await get_instance_by_any(User, db,{"email":email})
-        return user.id if user else None
 
 
-async def _extract_appointment_context(conversation_history: list | str) -> dict:
+
+async def extract_appointment_context(conversation_history: list | str) -> dict:
     llm = get_llama1()
 
     if isinstance(conversation_history, list):
@@ -69,7 +66,7 @@ Reply ONLY with valid JSON — no markdown, no extra text:
 
 async def book_appointment_node(state: dict) -> dict:
 
-    print("i came here [book_appointment_node] -----------------------------")
+    print("[book_appointment_node] -----------------------------")
 
     if state.get("slot_stage") != "ready_to_book":
         return state
@@ -78,12 +75,14 @@ async def book_appointment_node(state: dict) -> dict:
     doctor_id   = state.get("confirmed_doctor_id")
     doctor_name = state.get("confirmed_doctor_name", "the doctor")
 
-    patient_id          = await _get_patient_id(state.get("user_email"))
+    patient_id          = state.get("patient_id")
     appointment_type_id = state.get("appointment_type_id")
 
-    # ── Extract clinical context from conversation ─────────────────────────────
-    conversation_history = state.get("conversation_history") or state.get("messages") or []
-    context = await _extract_appointment_context(conversation_history)
+    # ── Extract clinical context ONLY from conversation_history ───────────────
+    conversation_history = list(state.get("conversation_history") or [])
+
+    context = await extract_appointment_context(conversation_history)
+    print(" [ extracted_context ]:", context)
 
     reason_for_visit = context.get("reason_for_visit")
     notes            = context.get("notes")
@@ -109,6 +108,17 @@ async def book_appointment_node(state: dict) -> dict:
             is_active=True,
         )
 
+    confirmation_text = (
+        f"Perfect! Your appointment with {doctor_name} is confirmed for "
+        f"{matched['full_display']}. You'll receive a confirmation shortly."
+    )
+
+    # Append assistant confirmation to conversation_history
+    conversation_history.append({
+        "role": "assistant",
+        "content": confirmation_text
+    })
+
     return {
         **state,
         "booked_slot_id":      matched["id"],
@@ -118,8 +128,6 @@ async def book_appointment_node(state: dict) -> dict:
         "reason_for_visit":    reason_for_visit,
         "notes":               notes,
         "instructions":        instructions,
-        "ai_text": (
-            f"Perfect! Your appointment with {doctor_name} is confirmed for "
-            f"{matched['full_display']}. You'll receive a confirmation shortly."
-        ),
+        "conversation_history": conversation_history,
+        "ai_text": confirmation_text,
     }
