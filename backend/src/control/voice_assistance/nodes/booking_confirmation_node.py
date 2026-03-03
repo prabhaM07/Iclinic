@@ -1,17 +1,5 @@
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
-
-
-conf = ConnectionConfig(
-    MAIL_USERNAME="prabhamuruganantham06@gmail.com",
-    MAIL_PASSWORD="ptyt oscx cego mthh",
-    MAIL_FROM="prabhamuruganantham06@gmail.com",
-    MAIL_PORT=587,
-    MAIL_SERVER="smtp.gmail.com",
-    MAIL_STARTTLS=True,
-    MAIL_SSL_TLS=False,
-    USE_CREDENTIALS=True,
-)
-
+from fastapi_mail import FastMail, MessageSchema
+from src.control.voice_assistance.config import conf
 
 async def _send_confirmation_email(to_email: str, body: str) -> None:
     message = MessageSchema(
@@ -29,29 +17,26 @@ def _build_email_body(state: dict) -> str:
     slot_display = state.get("booked_slot_display", "the scheduled time")
 
     reason       = state.get("reason_for_visit")
-    notes        = state.get("notes")
     instructions = state.get("instructions")
-
+    patient_name = state.get("user_name", "Patient")
+    
     lines = [
-        "Dear Patient,",
+        f"Dear {patient_name},",
         "",
         f"Your appointment has been successfully booked.",
         "",
         f"  Doctor  : {doctor_name}",
         f"  Slot    : {slot_display}",
     ]
-
     if reason:
         lines.append(f"  Reason  : {reason}")
-    if notes:
-        lines.append(f"  Notes   : {notes}")
     if instructions:
         lines.append(f"  Instructions : {instructions}")
 
     lines += [
         "",
         "Please arrive 10 minutes before your scheduled time.",
-        "If you need to reschedule or cancel, contact us as soon as possible.",
+        "If you need to cancel, contact us as soon as possible.",
         "",
         "Best regards,",
         "The Appointments Team",
@@ -62,7 +47,7 @@ def _build_email_body(state: dict) -> str:
 
 async def booking_confirmation_node(state: dict) -> dict:
 
-    print("i came here [booking_confirmation_node] -----------------------------")
+    print("[booking_confirmation_node] -----------------------------")
 
     # Only run after a successful booking
     if not state.get("booked_slot_id"):

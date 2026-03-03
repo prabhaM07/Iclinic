@@ -4,15 +4,15 @@ from src.control.voice_assistance.models import get_llama1
 from src.data.clients.postgres_client import AsyncSessionLocal
 
 SERVICE_INTENT_PROMPT = """
-You are an intent classifier for a hospital voice assistant.
+    You are an intent classifier for a hospital voice assistant.
 
-Classify the user's request into ONE of these:
+    Classify the user's request into ONE of these:
 
-booking
-cancellation
+    booking
+    cancellation
 
-Reply with ONLY one word.
-If unclear, reply: unclear
+    Reply with ONLY one word.
+    If unclear, reply: unclear
 """
 
 async def get_patient_id(email: str) -> str | None:
@@ -63,3 +63,6 @@ async def service_intent_node(state: dict) -> dict:
             "ai_text": "Something went wrong. Please try again.",
             "error": str(e),
         }
+    
+
+    

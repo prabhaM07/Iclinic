@@ -67,11 +67,14 @@ async def voice_response(request: Request):
     confirmation_done = result.get("confirmation_done", False)
     confirmed_user    = result.get("confirmed_user", False)
     emergency         = result.get("emergency", False)
+    cancellation_complete = result.get("cancellation_complete", False)
+
     id = result.get("booked_slot_id")
     
     call_complete = (
         (confirmation_done and not confirmed_user)  # identity denied
         or id is not None                           # actual booking done
+        or cancellation_complete                    # actual cancellation done
     )
     
     if call_complete:

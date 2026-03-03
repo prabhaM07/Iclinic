@@ -32,14 +32,14 @@ class Settings(BaseSettings):
 
     SESSION_TTL_SECONDS : int
 
-    MAIL_USERNAME: str
-    MAIL_PASSWORD: str
-    MAIL_FROM: str
-    MAIL_PORT: int
-    MAIL_SERVER: str
-    MAIL_STARTTLS: bool
-    MAIL_SSL_TLS: bool
-    USE_CREDENTIALS: bool
+    EMAIL_USERNAME: str
+    EMAIL_PASSWORD: str
+    EMAIL_FROM: str
+    EMAIL_PORT: int
+    EMAIL_SERVER: str
+    EMAIL_STARTTLS: bool
+    EMAIL_SSL_TLS: bool
+    EMAIL_USE_CREDENTIALS: bool
 
     EMERGENCY_FORWARD_NUMBER : str
 
@@ -51,3 +51,5 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 settings = Settings()
+
+

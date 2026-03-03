@@ -20,6 +20,7 @@ from .nodes.book_appointment_node         import book_appointment_node
 from .nodes.booking_confirmation_node     import booking_confirmation_node  
 from .nodes.service_intent_node           import service_intent_node
 from .nodes.cancel_appointment_node       import cancel_appointment_node
+from .nodes.cancel_confirmation_node      import cancel_confirmation_node
 
 def build_call_graph():
     workflow = StateGraph(VoiceState)
@@ -43,7 +44,8 @@ def build_response_graph():
     workflow.add_node("cancel_appointment",   cancel_appointment_node)
     workflow.add_node("slot_selection",       slot_selection_node)
     workflow.add_node("book_appointment",     book_appointment_node)
-    workflow.add_node("booking_confirmation", booking_confirmation_node)  # ← new
+    workflow.add_node("booking_confirmation", booking_confirmation_node)
+    workflow.add_node("cancel_confirmation", cancel_confirmation_node)
     workflow.add_node("tts",                  tts_node)
 
     # entry
@@ -97,9 +99,10 @@ def build_response_graph():
         {"book_appointment": "book_appointment", "tts": "tts"},
     )
 
-    workflow.add_edge("book_appointment",     "booking_confirmation")
+    workflow.add_edge("book_appointment","booking_confirmation")
     workflow.add_edge("booking_confirmation", "tts")
-    workflow.add_edge("cancel_appointment", "tts")
-    workflow.add_edge("tts",                  END)
+    workflow.add_edge("cancel_appointment", "cancel_confirmation")
+    workflow.add_edge("cancel_confirmation", "tts")
+    workflow.add_edge("tts",END)
 
     return workflow.compile()

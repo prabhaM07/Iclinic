@@ -35,7 +35,7 @@ async def identity_confirmation_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 phone=phone_number
             )
         },
-        *conversation_history
+        {"role":"user", "content": user_text}
     ]
 
     # If no user message yet, force first turn

@@ -25,17 +25,15 @@ CONFIRM_PROMPT = """
 You are a medical voice assistant.
 
 The user wants to cancel this appointment:
-Date: {date}
-Time: {start_time} to {end_time}
-Type: {appointment_type}
-
-Ask: "Are you sure you want to cancel this appointment?"
+Type   : {appointment_type}
+Date   : {date}
+Time   : {start_time} to {end_time}
+Reason : {reason}
 
 If the user clearly agrees, reply: YES
 If the user declines, reply: NO
 Reply ONLY YES or NO.
 """
-
 
 async def cancel_appointment_node(state: dict) -> dict:
 
@@ -48,7 +46,7 @@ async def cancel_appointment_node(state: dict) -> dict:
     print(f"[cancel_appointment_node] user_id={user_id}, stage={stage}, user_text={user_text}")
 
     # -------------------------------------------
-    # STAGE 1 → Fetch All Appointments & Ask Which
+    # STAGE 1 → Fetch All Appointments
     # -------------------------------------------
     if stage is None:
 
@@ -90,7 +88,6 @@ async def cancel_appointment_node(state: dict) -> dict:
                 "cancellation_complete": True,
             }
 
-        # Build appointments list for state
         appointments_list = []
         for appointment, type_name in rows:
             appointments_list.append({
@@ -102,7 +99,33 @@ async def cancel_appointment_node(state: dict) -> dict:
                 "type_name": type_name,
             })
 
-        # Build spoken list for user
+        # -----------------------------------------------
+        # Only ONE appointment → skip selection, ask confirm directly
+        # -----------------------------------------------
+        if len(appointments_list) == 1:
+            chosen = appointments_list[0]
+            reason_line = (
+                f"The reason you booked this was: {chosen['reason']}. "
+                if chosen["reason"] != "Not specified"
+                else ""
+            )
+            return {
+                **state,
+                "appointments_list": appointments_list,
+                "appointment_to_cancel": chosen,
+                "cancellation_stage": "ask_confirm",
+                "ai_text": (
+                    f"You have one scheduled appointment. "
+                    f"{chosen['type_name']} on {chosen['date']} "
+                    f"from {chosen['start_time']} to {chosen['end_time']}. "
+                    f"{reason_line}"
+                    f"Are you sure you want to cancel this appointment?"
+                ),
+            }
+
+        # -----------------------------------------------
+        # Multiple appointments → ask which type
+        # -----------------------------------------------
         spoken_list = ", ".join(
             [f"{i+1}. {a['type_name']} on {a['date']}" for i, a in enumerate(appointments_list)]
         )
@@ -112,15 +135,14 @@ async def cancel_appointment_node(state: dict) -> dict:
             "appointments_list": appointments_list,
             "cancellation_stage": "ask_which",
             "ai_text": (
-                f"You have {len(appointments_list)} scheduled appointment"
-                f"{'s' if len(appointments_list) > 1 else ''}. "
+                f"You have {len(appointments_list)} scheduled appointments. "
                 f"{spoken_list}. "
                 f"Which appointment type would you like to cancel?"
             ),
         }
 
     # -------------------------------------------
-    # STAGE 2 → Match User Choice to Appointment
+    # STAGE 2 → Match User Choice (multiple only)
     # -------------------------------------------
     if stage == "ask_which":
 
@@ -134,62 +156,54 @@ async def cancel_appointment_node(state: dict) -> dict:
                 "ai_text": "Please say the name of the appointment type you want to cancel.",
             }
 
-        # If only one appointment, skip selection
-        if len(appointments_list) == 1:
-            chosen = appointments_list[0]
-            print(f"[cancel_appointment_node] Only one appointment, auto-selecting: {chosen}")
-        else:
-            try:
-                model = get_llama1()
+        try:
+            model = get_llama1()
 
-                spoken_types = "\n".join(
-                    [f"- {a['type_name']}" for a in appointments_list]
-                )
+            spoken_types = "\n".join([f"- {a['type_name']}" for a in appointments_list])
 
-                response = await model.ainvoke([
-                    ("system", SELECT_PROMPT.format(
-                        appointments_list=spoken_types,
-                        user_text=user_text,
-                    )),
-                    ("human", user_text),
-                ])
+            response = await model.ainvoke([
+                ("system", SELECT_PROMPT.format(
+                    appointments_list=spoken_types,
+                    user_text=user_text,
+                )),
+                ("human", user_text),
+            ])
 
-                matched_type = response.content.strip()
-                print(f"[cancel_appointment_node] LLM matched type: '{matched_type}'")
+            matched_type = response.content.strip()
+            print(f"[cancel_appointment_node] LLM matched type: '{matched_type}'")
 
-            except Exception as e:
-                print(f"[cancel_appointment_node] LLM ERROR: {type(e).__name__}: {e}")
-                return {
-                    **state,
-                    "ai_text": "Something went wrong. Please try again.",
-                    "cancellation_complete": True,
-                }
+        except Exception as e:
+            print(f"[cancel_appointment_node] LLM ERROR: {type(e).__name__}: {e}")
+            return {
+                **state,
+                "ai_text": "Something went wrong. Please try again.",
+                "cancellation_complete": True,
+            }
 
-            if matched_type == "UNKNOWN":
-                type_names = ", ".join([a["type_name"] for a in appointments_list])
-                return {
-                    **state,
-                    "ai_text": (
-                        f"I could not understand which appointment you meant. "
-                        f"Please say one of these: {type_names}."
-                    ),
-                }
+        if matched_type == "UNKNOWN":
+            type_names = ", ".join([a["type_name"] for a in appointments_list])
+            return {
+                **state,
+                "ai_text": f"I could not understand. Please say one of these: {type_names}.",
+            }
 
-            # Find matching appointment from list
-            chosen = next(
-                (a for a in appointments_list if a["type_name"].lower() == matched_type.lower()),
-                None
-            )
+        chosen = next(
+            (a for a in appointments_list if a["type_name"].lower() == matched_type.lower()),
+            None
+        )
 
-            if not chosen:
-                type_names = ", ".join([a["type_name"] for a in appointments_list])
-                return {
-                    **state,
-                    "ai_text": (
-                        f"I could not find that appointment type. "
-                        f"Please choose from: {type_names}."
-                    ),
-                }
+        if not chosen:
+            type_names = ", ".join([a["type_name"] for a in appointments_list])
+            return {
+                **state,
+                "ai_text": f"I could not find that type. Please choose from: {type_names}.",
+            }
+
+        reason_line = (
+            f"The reason you booked this was: {chosen['reason']}. "
+            if chosen["reason"] != "Not specified"
+            else ""
+        )
 
         return {
             **state,
@@ -198,6 +212,7 @@ async def cancel_appointment_node(state: dict) -> dict:
             "ai_text": (
                 f"You selected {chosen['type_name']} on {chosen['date']} "
                 f"from {chosen['start_time']} to {chosen['end_time']}. "
+                f"{reason_line}"
                 f"Are you sure you want to cancel this appointment?"
             ),
         }
@@ -225,6 +240,7 @@ async def cancel_appointment_node(state: dict) -> dict:
                     start_time=appointment_data["start_time"],
                     end_time=appointment_data["end_time"],
                     appointment_type=appointment_data["type_name"],
+                    reason=appointment_data["reason"],
                 )),
                 ("human", user_text),
             ])
@@ -279,7 +295,3 @@ async def cancel_appointment_node(state: dict) -> dict:
             }
 
     print(f"[cancel_appointment_node] WARNING: Unhandled stage='{stage}'")
-
-
-
-    
